@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/adaptive_app.iml" filepath="$PROJECT_DIR$/.idea/adaptive_app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/flask-login-register-form.iml" filepath="$PROJECT_DIR$/.idea/flask-login-register-form.iml" />
     </modules>
   </component>
 </project>

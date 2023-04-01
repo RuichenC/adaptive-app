@@ -1,0 +1,65 @@
+Index: app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from flask import Flask, render_template, flash, redirect, url_for, session, logging, request\r\nfrom flask_sqlalchemy import SQLAlchemy\r\nfrom flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user\r\nfrom werkzeug.security import generate_password_hash, check_password_hash\r\nfrom flask_restful import Resource, Api, reqparse\r\n\r\napp = Flask(__name__)\r\nimport os\r\n\r\nbasedir = os.path.abspath(os.path.dirname(__file__))\r\napp.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, \"database.db\")}'\r\n# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://your_username:your_password@your_instance_ip:3306/your_database'\r\napp.config['SECRET_KEY'] = os.urandom(24)\r\n\r\ndb = SQLAlchemy(app)\r\nlogin_manager = LoginManager()\r\nlogin_manager.init_app(app)\r\nlogin_manager.login_view = \"login\"\r\n\r\n\r\nclass User(UserMixin, db.Model):\r\n    id = db.Column(db.Integer, primary_key=True)\r\n    username = db.Column(db.String(80), unique=True)\r\n    email = db.Column(db.String(120), unique=True)\r\n    password = db.Column(db.String(255))\r\n\r\n\r\n# Initialize the API\r\napi = Api(app)\r\n# Set up an argument parser for user registration and login\r\nuser_parser = reqparse.RequestParser()\r\nuser_parser.add_argument(\"uname\", type=str, required=True, help=\"Username is required\")\r\nuser_parser.add_argument(\"mail\", type=str, required=False)\r\nuser_parser.add_argument(\"passw\", type=str, required=True, help=\"Password is required\")\r\n\r\n\r\nclass Register(Resource):\r\n    def post(self):\r\n        args = user_parser.parse_args()\r\n        uname = args['uname']\r\n        mail = args['mail']\r\n        passw = args['passw']\r\n\r\n        if User.query.filter_by(username=uname).first() is not None:\r\n            return {\"message\": \"Username already taken\"}, 400\r\n\r\n        hashed_password = generate_password_hash(passw, method=\"sha256\")\r\n        new_user = User(username=uname, email=mail, password=hashed_password)\r\n        db.session.add(new_user)\r\n        db.session.commit()\r\n\r\n        return {\"message\": \"Registration successful\"}, 201\r\n\r\n\r\nclass Login(Resource):\r\n    def post(self):\r\n        args = user_parser.parse_args()\r\n        uname = args[\"uname\"]\r\n        passw = args[\"passw\"]\r\n\r\n        user = User.query.filter_by(username=uname).first()\r\n        if user and check_password_hash(user.password, passw):\r\n            login_user(user)\r\n            return {\"message\": \"Logged in successfully\"}, 200\r\n        else:\r\n            return {\"message\": \"Invalid credentials\"}, 401\r\n\r\n\r\nclass Logout(Resource):\r\n    @login_required\r\n    def post(self):\r\n        logout_user()\r\n        return {\"message\": \"Logged out successfully\"}, 200\r\n\r\n\r\nclass Profile(Resource):\r\n    @login_required\r\n    def get(self):\r\n        user = User.query.filter_by(id=current_user.id).first()\r\n        return {\r\n            \"id\": user.id,\r\n            \"username\": user.username,\r\n            \"email\": user.email\r\n        }, 200\r\n\r\n\r\nclass UserLoader(Resource):\r\n    @login_required\r\n    def get(self):\r\n        user = User.query.get(int(current_user.id))\r\n        return {\r\n            \"id\": user.id,\r\n            \"username\": user.username,\r\n            \"email\": user.email\r\n        }\r\n\r\n\r\nclass Index(Resource):\r\n    def get(self):\r\n        if current_user.is_authenticated:\r\n            return {\"message\": \"Welcome, {}!\".format(current_user.username)}, 200\r\n        else:\r\n            return {\"message\": \"Welcome, guest!\"}, 200\r\n\r\n\r\napi.add_resource(Index, \"/api/index\")\r\napi.add_resource(Register, \"/api/register\")\r\napi.add_resource(Login, \"/api/login\")\r\napi.add_resource(Logout, \"/api/logout\")\r\napi.add_resource(Profile, \"/api/profile\")\r\napi.add_resource(UserLoader, \"/api/user_loader\")\r\n\r\n\r\n@login_manager.user_loader\r\ndef load_user(user_id):\r\n    return User.query.get(int(user_id))\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    with app.app_context():\r\n        db.create_all()\r\n    app.run(debug=True)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app.py b/app.py
+--- a/app.py	(revision 7dd5041d28542afaf3b27b31457afde651f591ac)
++++ b/app.py	(date 1681220229412)
+@@ -4,27 +4,20 @@
+ from werkzeug.security import generate_password_hash, check_password_hash
+ from flask_restful import Resource, Api, reqparse
+ 
+-app = Flask(__name__)
+ import os
++from models import db, User
+ 
++app = Flask(__name__)
+ basedir = os.path.abspath(os.path.dirname(__file__))
+ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "database.db")}'
+ # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://your_username:your_password@your_instance_ip:3306/your_database'
+ app.config['SECRET_KEY'] = os.urandom(24)
+ 
+-db = SQLAlchemy(app)
++db.init_app(app)  # Initialize the db instance with the Flask app
+ login_manager = LoginManager()
+ login_manager.init_app(app)
+ login_manager.login_view = "login"
+ 
+-
+-class User(UserMixin, db.Model):
+-    id = db.Column(db.Integer, primary_key=True)
+-    username = db.Column(db.String(80), unique=True)
+-    email = db.Column(db.String(120), unique=True)
+-    password = db.Column(db.String(255))
+-
+-
+ # Initialize the API
+ api = Api(app)
+ # Set up an argument parser for user registration and login
+Index: models.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/models.py b/models.py
+new file mode 100644
+--- /dev/null	(date 1681220119460)
++++ b/models.py	(date 1681220119460)
+@@ -0,0 +1,14 @@
++from flask_sqlalchemy import SQLAlchemy
++from flask_login import UserMixin
++from werkzeug.security import generate_password_hash, check_password_hash
++
++db = SQLAlchemy()
++
++
++class User(UserMixin, db.Model):
++    id = db.Column(db.Integer, primary_key=True)
++    username = db.Column(db.String(80), unique=True)
++    email = db.Column(db.String(120), unique=True)
++    password = db.Column(db.String(255))
++
++# Add more models here
