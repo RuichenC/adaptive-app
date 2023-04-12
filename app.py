@@ -5,7 +5,7 @@ from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
 
 import os
-from models import db, User
+from models import db, User, Movie
 
 app = Flask(__name__)
 CORS(app)
@@ -19,8 +19,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-
-
 # Initialize the API
 api = Api(app)
 # Set up an argument parser for user registration and login
@@ -28,6 +26,7 @@ user_parser = reqparse.RequestParser()
 user_parser.add_argument("uname", type=str, required=True, help="Username is required")
 user_parser.add_argument("mail", type=str, required=False)
 user_parser.add_argument("passw", type=str, required=True, help="Password is required")
+user_parser.add_argument("country", type=str, required=True, help="Country is required")
 
 
 class Register(Resource):
@@ -36,12 +35,13 @@ class Register(Resource):
         uname = args['uname']
         mail = args['mail']
         passw = args['passw']
+        country = args['country']
 
         if User.query.filter_by(username=uname).first() is not None:
             return {"message": "Username already taken"}, 400
 
         hashed_password = generate_password_hash(passw, method="sha256")
-        new_user = User(username=uname, email=mail, password=hashed_password)
+        new_user = User(username=uname, email=mail, password=hashed_password, country=country)
         db.session.add(new_user)
         db.session.commit()
 
@@ -76,7 +76,8 @@ class Profile(Resource):
         return {
             "id": user.id,
             "username": user.username,
-            "email": user.email
+            "email": user.email,
+            "country": user.country
         }, 200
 
 
@@ -99,12 +100,62 @@ class Index(Resource):
             return {"message": "Welcome, guest!"}, 200
 
 
+class LikeMovie(Resource):
+    @login_required
+    def post(self, movie_id):
+        movie = Movie.query.get_or_404(movie_id)
+        current_user.liked_movies.append(movie)
+        db.session.commit()
+        return {"message": f"Movie {movie_id} liked."}, 200
+
+
+class LikedMovies(Resource):
+    @login_required
+    def get(self):
+        liked_movies = [
+            {
+                "id": movie.id,
+                "title": movie.movie_title,
+                # Add other movie attributes here if needed
+            }
+            for movie in current_user.liked_movies
+        ]
+        return {"liked_movies": liked_movies}, 200
+
+
+class DislikeMovie(Resource):
+    @login_required
+    def post(self, movie_id):
+        movie = Movie.query.get_or_404(movie_id)
+        current_user.disliked_movies.append(movie)
+        db.session.commit()
+        return {"message": f"Movie {movie_id} disliked."}, 200
+
+
+class DislikedMovies(Resource):
+    @login_required
+    def get(self):
+        disliked_movies = [
+            {
+                "id": movie.id,
+                "title": movie.movie_title,
+                # Add other movie attributes here if needed
+            }
+            for movie in current_user.disliked_movies
+        ]
+        return {"disliked_movies": disliked_movies}, 200
+
+
 api.add_resource(Index, "/api/index")
 api.add_resource(Register, "/api/register")
 api.add_resource(Login, "/api/login")
 api.add_resource(Logout, "/api/logout")
 api.add_resource(Profile, "/api/profile")
 api.add_resource(UserLoader, "/api/user_loader")
+api.add_resource(LikeMovie, "/api/like/<int:movie_id>")
+api.add_resource(DislikeMovie, "/api/dislike/<int:movie_id>")
+api.add_resource(LikedMovies, "/api/liked_movies")
+api.add_resource(DislikedMovies, "/api/disliked_movies")
 
 
 @login_manager.user_loader

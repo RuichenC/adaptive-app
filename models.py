@@ -1,8 +1,20 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+
 
 db = SQLAlchemy()
+
+# Association table for likes
+likes = db.Table('likes',
+                 db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                 db.Column('movie_id', db.Integer, db.ForeignKey('movie.id'))
+                 )
+
+# Association table for dislikes
+dislikes = db.Table('dislikes',
+                    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                    db.Column('movie_id', db.Integer, db.ForeignKey('movie.id'))
+                    )
 
 
 class User(UserMixin, db.Model):
@@ -10,7 +22,9 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True)
     email = db.Column(db.String(120), unique=True)
     password = db.Column(db.String(255))
-    country = db.Column(db.String(50))
+    country = db.Column(db.String(80))
+    liked_movies = db.relationship('Movie', secondary=likes, backref='liked_by_users')
+    disliked_movies = db.relationship('Movie', secondary=dislikes, backref='disliked_by_users')
 
 
 # Add more models here, e.g., the Movie model.
