@@ -26,8 +26,12 @@ user_parser = reqparse.RequestParser()
 user_parser.add_argument("uname", type=str, required=True, help="Username is required")
 user_parser.add_argument("mail", type=str, required=False)
 user_parser.add_argument("passw", type=str, required=True, help="Password is required")
-user_parser.add_argument("country", type=str, required=True, help="Country is required")
-user_parser.add_argument("query", type=str, required=False)
+user_parser.add_argument("country", type=str, required=False, help="Country is required")
+
+movie_search_parser = reqparse.RequestParser()
+movie_search_parser.add_argument("query", type=str, required=False)
+
+
 
 
 class Register(Resource):
@@ -167,7 +171,7 @@ class DislikedMovies(Resource):
 
 class SearchMovies(Resource):
     def get(self):
-        args = user_parser.parse_args()
+        args = movie_search_parser.parse_args()
         query = args["query"]
 
         if not query:
