@@ -27,6 +27,7 @@ user_parser.add_argument("uname", type=str, required=True, help="Username is req
 user_parser.add_argument("mail", type=str, required=False)
 user_parser.add_argument("passw", type=str, required=True, help="Password is required")
 user_parser.add_argument("country", type=str, required=True, help="Country is required")
+user_parser.add_argument("query", type=str, required=False)
 
 
 class Register(Resource):
@@ -123,6 +124,24 @@ class LikedMovies(Resource):
         return {"liked_movies": liked_movies}, 200
 
 
+class RemoveLikedMovie(Resource):
+    @login_required
+    def post(self, movie_id):
+        movie = Movie.query.get_or_404(movie_id)
+        current_user.liked_movies.remove(movie)
+        db.session.commit()
+        return {"message": f"Movie {movie_id} removed from liked movies."}, 200
+
+
+class RemoveDislikedMovie(Resource):
+    @login_required
+    def post(self, movie_id):
+        movie = Movie.query.get_or_404(movie_id)
+        current_user.disliked_movies.remove(movie)
+        db.session.commit()
+        return {"message": f"Movie {movie_id} removed from disliked movies."}, 200
+
+
 class DislikeMovie(Resource):
     @login_required
     def post(self, movie_id):
@@ -146,6 +165,28 @@ class DislikedMovies(Resource):
         return {"disliked_movies": disliked_movies}, 200
 
 
+class SearchMovies(Resource):
+    def get(self):
+        args = user_parser.parse_args()
+        query = args["query"]
+
+        if not query:
+            return {"message": "Please provide a search query."}, 400
+
+        matched_movies = Movie.query.filter(Movie.movie_title.ilike(f"%{query}%")).all()
+        result = [
+            {
+                "id": movie.id,
+                "title": movie.movie_title,
+                # Add other movie attributes here if needed
+            }
+            for movie in matched_movies
+        ]
+
+        return {"matched_movies": result}, 200
+
+
+# !!!API LIST!!!
 api.add_resource(Index, "/api/index")
 api.add_resource(Register, "/api/register")
 api.add_resource(Login, "/api/login")
@@ -156,6 +197,9 @@ api.add_resource(LikeMovie, "/api/like/<int:movie_id>")
 api.add_resource(DislikeMovie, "/api/dislike/<int:movie_id>")
 api.add_resource(LikedMovies, "/api/liked_movies")
 api.add_resource(DislikedMovies, "/api/disliked_movies")
+api.add_resource(SearchMovies, "/api/search_movies")
+api.add_resource(RemoveLikedMovie, "/api/remove_liked/<int:movie_id>")
+api.add_resource(RemoveDislikedMovie, "/api/remove_disliked/<int:movie_id>")
 
 
 @login_manager.user_loader
