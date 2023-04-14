@@ -181,21 +181,20 @@ class SearchMovies(Resource):
         ]
         return {'matched_movies': result}, 200
     
+
 class Recommendations(Resource):
     def __init__(self) -> None:
         super().__init__()
         self.embeddings = pickle.load(open("embeddings.pkl", "rb"))
-    
+
     def get_liked_movies(self, user_id):
-        user_id = 1
-        liked_movie_ids = User.query.get(user_id).liked_movies
+        liked_movie_ids = db.session.query(User).get(user_id).liked_movies
         return liked_movie_ids
-    
+
     def get_disliked_movies(self, user_id):
-        user_id = 1
-        disliked_movie_ids = User.query.get(user_id).disliked_movies
+        disliked_movie_ids = db.session.query(User).get(user_id).disliked_movies
         return disliked_movie_ids
-    
+
     def get(self):
         disliked_movie_ids = [movie.movie_id for movie in self.get_disliked_movies(1)]
         liked_movie_ids = [movie.movie_id for movie in self.get_liked_movies(1)]
@@ -217,17 +216,17 @@ class Recommendations(Resource):
         all_genre = set()
         for index, row in all_movie_df.iterrows():
             all_genre.update(row['genre'])
-        
+
         for genre in all_genre:
             recommendations[genre] = []
 
         for movie_id in liked_movie_ids:
             all_movie_df[movie_id] = all_movie_df['embeddings'].apply(lambda x: cosine_similarity([x], [all_movie_df[all_movie_df['movie_id'] == movie_id]['embeddings'].values[0]])[0][0])
-        
+
         all_movie_df['avg_similarity'] = all_movie_df[liked_movie_ids].mean(axis=1)
         all_movie_df = all_movie_df.sort_values(by='avg_similarity', ascending=False)
 
-
+        ten = 0
         for index, row in all_movie_df.iterrows():
             if len(recommendations['top_10']) < 10:
                 recommendations['top_10'].append({'id': row['movie_id'], 'title': row['movie_title']})
