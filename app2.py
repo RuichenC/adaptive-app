@@ -228,9 +228,8 @@ class Recommendations(Resource):
         all_movie_df = all_movie_df.sort_values(by='avg_similarity', ascending=False)
 
 
-        ten = 0
         for index, row in all_movie_df.iterrows():
-            if ten < 10:
+            if len(recommendations['top_10']) < 10:
                 recommendations['top_10'].append({'id': row['movie_id'], 'title': row['movie_title']})
                 ten += 1
             for genre in row['genre']:
