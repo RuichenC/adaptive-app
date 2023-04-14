@@ -208,9 +208,12 @@ class Recommendations(Resource):
         all_movie_df['movie_sentence'] = [movie.movie_sentence for movie in all_movies_obj]
         all_movie_df['genre'] = [movie.geners for movie in all_movies_obj]
         all_movie_df.genre = all_movie_df.genre.apply(lambda x: eval(x))
-        embeddings_df = pd.DataFrame(self.embeddings)
-        embeddings_df = embeddings_df.apply(lambda row: row.to_numpy(), axis=1)
-        all_movie_df['embeddings'] = embeddings_df[:23922]
+
+        self.embeddings['movie_id'] = self.embeddings['movie_id'].astype(str)
+        all_movie_df['movie_id'] = all_movie_df['movie_id'].astype(str)
+        
+        all_movie_df = all_movie_df.merge(self.embeddings, how='left', on='movie_id')
+
         all_movie_df = all_movie_df[~all_movie_df['movie_id'].isin(disliked_movie_ids)]
 
         recommendations = {'top_10': []}
@@ -231,7 +234,6 @@ class Recommendations(Resource):
         for index, row in all_movie_df.iterrows():
             if len(recommendations['top_10']) < 10:
                 recommendations['top_10'].append({'id': row['movie_id'], 'title': row['movie_title']})
-                ten += 1
             for genre in row['genre']:
                 if len(recommendations[genre]) < 10:
                     recommendations[genre].append({'id': row['movie_id'], 'title': row['movie_title']})
