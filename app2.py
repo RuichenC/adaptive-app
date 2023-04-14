@@ -8,11 +8,13 @@ import os
 from models import db, User, Movie
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="*")
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "database.db")}'
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['JWT_SECRET_KEY'] = os.urandom(24)
+app.config['CORS_HEADERS'] = 'Content-Type,Authorization'
+
 
 db.init_app(app)
 api = Api(app)
@@ -56,13 +58,13 @@ class Login(Resource):
         user = User.query.filter_by(username=uname).first()
         if user and check_password_hash(user.password, passw):
             access_token = create_access_token(identity=user.id)
-            return {"access_token": access_token, "message": "Logged in successfully"}, 200
+            return {"access_token": access_token, "message": "Logged in successfully","user_id":user.id}, 200
         else:
             return {"message": "Invalid credentials"}, 401
 
 
 class Profile(Resource):
-    @jwt_required()
+   # @jwt_required()
     def get(self):
         user_id = get_jwt_identity()
         user = User.query.filter_by(id=user_id).first()
@@ -80,9 +82,9 @@ class Index(Resource):
 
 
 class LikeMovie(Resource):
-    @jwt_required()
+    #@jwt_required()
     def post(self, movie_id):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         movie = Movie.query.get_or_404(movie_id)
         user.liked_movies.append(movie)
@@ -91,9 +93,9 @@ class LikeMovie(Resource):
 
 
 class LikedMovies(Resource):
-    @jwt_required()
+    #@jwt_required()
     def get(self):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         liked_movies = [
             {
@@ -106,9 +108,9 @@ class LikedMovies(Resource):
         return {"liked_movies": liked_movies}, 200
 
 class RemoveLikedMovie(Resource):
-    @jwt_required()
+    #@jwt_required()
     def post(self, movie_id):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         movie = Movie.query.get_or_404(movie_id)
         user.liked_movies.remove(movie)
@@ -116,9 +118,9 @@ class RemoveLikedMovie(Resource):
         return {"message": f"Movie {movie_id} removed from liked movies."}, 200
 
 class RemoveDislikedMovie(Resource):
-    @jwt_required()
+    #@jwt_required()
     def post(self, movie_id):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         movie = Movie.query.get_or_404(movie_id)
         user.disliked_movies.remove(movie)
@@ -126,9 +128,9 @@ class RemoveDislikedMovie(Resource):
         return {"message": f"Movie {movie_id} removed from disliked movies."}, 200
 
 class DislikeMovie(Resource):
-    @jwt_required()
+    #@jwt_required()
     def post(self, movie_id):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         movie = Movie.query.get_or_404(movie_id)
         user.disliked_movies.append(movie)
@@ -136,9 +138,9 @@ class DislikeMovie(Resource):
         return {"message": f"Movie {movie_id} disliked."}, 200
 
 class DislikedMovies(Resource):
-    @jwt_required()
+    #@jwt_required()
     def get(self):
-        user_id = get_jwt_identity()
+        user_id = 1
         user = User.query.filter_by(id=user_id).first()
         disliked_movies = [
             {
@@ -151,13 +153,14 @@ class DislikedMovies(Resource):
         return {"disliked_movies": disliked_movies}, 200
     
 class SearchMovies(Resource):
-    @jwt_required()
+    #@jwt_required()
     def get(self):
         query = request.args.get("query")
+        print(query)
         if not query:
             return {'message': 'Please provide a search query.'}, 400
-        matched_movies = Movie.query.filter(Movie.title.ilike(f'%{query}%')).all()
-        result =  result = [
+        matched_movies = Movie.query.filter(Movie.movie_title.ilike(f'%{query}%')).limit(20).all()
+        result = [
             {
                 "id": movie.id,
                 "title": movie.movie_title,

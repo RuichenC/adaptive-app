@@ -8,7 +8,7 @@ import os
 from models import db, User, Movie
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="*")
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "database.db")}'
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://your_username:your_password@your_instance_ip:3306/your_database'
@@ -68,14 +68,14 @@ class Login(Resource):
 
 
 class Logout(Resource):
-    @login_required
+    #@login_required
     def post(self):
         logout_user()
         return {"message": "Logged out successfully"}, 200
 
 
 class Profile(Resource):
-    @login_required
+    #@login_required
     def get(self):
         user = User.query.filter_by(id=current_user.id).first()
         return {
@@ -87,7 +87,7 @@ class Profile(Resource):
 
 
 class UserLoader(Resource):
-    @login_required
+    #@login_required
     def get(self):
         user = User.query.get(int(current_user.id))
         return {
@@ -106,7 +106,7 @@ class Index(Resource):
 
 
 class LikeMovie(Resource):
-    @login_required
+    #@login_required
     def post(self, movie_id):
         movie = Movie.query.get_or_404(movie_id)
         current_user.liked_movies.append(movie)
@@ -115,7 +115,7 @@ class LikeMovie(Resource):
 
 
 class LikedMovies(Resource):
-    @login_required
+    #@login_required
     def get(self):
         liked_movies = [
             {
@@ -129,7 +129,7 @@ class LikedMovies(Resource):
 
 
 class RemoveLikedMovie(Resource):
-    @login_required
+    #@login_required
     def post(self, movie_id):
         movie = Movie.query.get_or_404(movie_id)
         current_user.liked_movies.remove(movie)
@@ -138,7 +138,7 @@ class RemoveLikedMovie(Resource):
 
 
 class RemoveDislikedMovie(Resource):
-    @login_required
+    #@login_required
     def post(self, movie_id):
         movie = Movie.query.get_or_404(movie_id)
         current_user.disliked_movies.remove(movie)
@@ -147,7 +147,7 @@ class RemoveDislikedMovie(Resource):
 
 
 class DislikeMovie(Resource):
-    @login_required
+    #@login_required
     def post(self, movie_id):
         movie = Movie.query.get_or_404(movie_id)
         current_user.disliked_movies.append(movie)
@@ -156,7 +156,7 @@ class DislikeMovie(Resource):
 
 
 class DislikedMovies(Resource):
-    @login_required
+    #@login_required
     def get(self):
         disliked_movies = [
             {
